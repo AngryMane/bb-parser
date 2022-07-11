@@ -5,7 +5,7 @@ This is a parser for bitbake file. I developed this for the following use-cases.
 * parse bitbake with user's own reduce functions
 * paser bitbake without any other bitbake modules
 
-This paser is based on the official parser, and the official parser's license is  
+This paser is based on the official parser, and the official parser's license is [GPL-2.0-only](https://spdx.org/licenses/GPL-2.0-only.html).
 
 * [BBHandler](https://git.yoctoproject.org/poky/tree/bitbake/lib/bb/parse/parse_py/BBHandler.py)
 * [ConfHandler](https://git.yoctoproject.org/poky/tree/bitbake/lib/bb/parse/parse_py/ConfHandler.py)
