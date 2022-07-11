@@ -1,0 +1,4 @@
+*.bb
+schema_parser/*
+poky
+__pycache__
