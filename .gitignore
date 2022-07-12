@@ -1,4 +1,5 @@
 *.bb
 schema_parser/*
 poky
+.repo
 __pycache__
