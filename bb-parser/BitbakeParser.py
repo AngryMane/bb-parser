@@ -103,7 +103,7 @@ class BitbakeParser:
             function_body: FunctionBody = FunctionBody(
                 body, Position(self.__infunc__.lineno, 0), Position(lineno, 1)
             )
-            self.__visitor.function_callback(file_path, header, function_body)
+            self.__visitor.function_callback(file_path, lineno, header, function_body)
 
             self.__infunc__ = None
             self.__body__ = []
@@ -129,7 +129,7 @@ class BitbakeParser:
             Position(self.__inpython__.lineno, self.__inpython__.span[0]),
             Position(lineno - 1, 0),
         )
-        self.__visitor.python_function_callback(file_path, header, function_body)
+        self.__visitor.python_function_callback(file_path, lineno, header, function_body)
         self.__body__ = []
         self.__inpython__ = None
 
@@ -162,6 +162,7 @@ class BitbakeParser:
     ):
         self.__visitor.export_function_callback(
             file_path,
+            lineno,
             matched.group(1),
             Position(lineno, matched.span(1)[0]),
             Position(lineno, matched.span(1)[1]),
@@ -227,7 +228,7 @@ class BitbakeParser:
                     )
                 )
 
-        self.__visitor.add_task_callback(file_path, added_task, before, after)
+        self.__visitor.add_task_callback(file_path, lineno, added_task, before, after)
 
     def __del_task_event(
         self: "BitbakeParser",
@@ -241,7 +242,7 @@ class BitbakeParser:
             Position(lineno, matched.span(1)[0]),
             Position(lineno, matched.span(1)[1]),
         )
-        self.__visitor.delete_task_callback(file_path, deleted_task)
+        self.__visitor.delete_task_callback(file_path, lineno, deleted_task)
 
     def __add_handler_event(
         self: "BitbakeParser",
@@ -255,7 +256,7 @@ class BitbakeParser:
             Position(lineno, matched.span(1)[0]),
             Position(lineno, matched.span(1)[1]),
         )
-        self.__visitor.add_handler_callback(file_path, handler_task)
+        self.__visitor.add_handler_callback(file_path, lineno, handler_task)
 
     def __inherit_event(
         self: "BitbakeParser",
@@ -273,7 +274,7 @@ class BitbakeParser:
                     target, Position(lineno, start_pos), Position(lineno, end_pos)
                 )
             )
-        self.__visitor.inherit_callback(file_path, inherit_target_names)
+        self.__visitor.inherit_callback(file_path, lineno, inherit_target_names)
 
     def __feeder(
         self: "BitbakeParser", file_path: str, lineno, s, eof=False

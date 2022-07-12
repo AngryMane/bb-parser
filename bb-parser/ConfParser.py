@@ -111,7 +111,7 @@ class ConfParser:
 
         is_export: bool = True if matched.group("exp") else False
         self.__visitor.config_callback(
-            file_path, is_export, variable_info, flag, operator, value_info
+            file_path, lineno, is_export, variable_info, flag, operator, value_info
         )
 
     def parse_line(self: "ConfParser", file_path: str, lineno: int, s: str):
@@ -127,7 +127,7 @@ class ConfParser:
                 Position(lineno, m.span(1)[0]),
                 Position(lineno, m.span(1)[1]),
             )
-            self.__visitor.include_callback(file_path, include_target)
+            self.__visitor.include_callback(file_path, lineno, include_target)
             return
 
         m = self.__require_regexp__.match(s)
@@ -137,7 +137,7 @@ class ConfParser:
                 Position(lineno, m.span(1)[0]),
                 Position(lineno, m.span(1)[1]),
             )
-            self.__visitor.require_callback(file_path, require_target)
+            self.__visitor.require_callback(file_path, lineno, require_target)
             return
 
         m = self.__export_regexp__.match(s)
@@ -147,7 +147,7 @@ class ConfParser:
                 Position(lineno, m.span(1)[0]),
                 Position(lineno, m.span(1)[1]),
             )
-            self.__visitor.export_callback(file_path, export_target)
+            self.__visitor.export_callback(file_path, lineno, export_target)
             return
 
         m = self.__unset_regexp__.match(s)
@@ -157,7 +157,7 @@ class ConfParser:
                 Position(lineno, m.span(1)[0]),
                 Position(lineno, m.span(1)[1]),
             )
-            self.__visitor.unset_callback(file_path, unset_target)
+            self.__visitor.unset_callback(file_path, lineno, unset_target)
             return
 
         m = self.__unset_flag_regexp__.match(s)
@@ -172,7 +172,7 @@ class ConfParser:
                 Position(lineno, m.span(2)[0]),
                 Position(lineno, m.span(2)[1]),
             )
-            self.__visitor.unset_flag_callback(file_path, unset_target, unset_flag)
+            self.__visitor.unset_flag_callback(file_path, lineno, unset_target, unset_flag)
             return
 
-        self.__visitor.error_callback(lineno, file_path, f"unparsed line: '{s}'")
+        self.__visitor.error_callback(file_path, lineno, f"unparsed line: '{s}'")
