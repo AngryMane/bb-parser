@@ -64,7 +64,8 @@ class ConfParser:
     def __configure_event(
         self: "ConfParser",
         file_path: str,
-        lineno: int,
+        start_lineno: int,
+        cur_lineno: int,
         line: str,
         matched: Optional[re.Match],
     ):
@@ -74,8 +75,8 @@ class ConfParser:
         is_prepend: bool = True if matched.group("prepend") else False
         variable_info: VariableInfo = VariableInfo(
             symbol_name,
-            Position(lineno, matched_var_span[0]),
-            Position(lineno, matched_var_span[1]),
+            Position(cur_lineno, matched_var_span[0]),
+            Position(cur_lineno, matched_var_span[1]),
             is_append,
             is_prepend,
         )
@@ -85,8 +86,8 @@ class ConfParser:
         flag: Optional[SymbolInfo] = (
             SymbolInfo(
                 flag_name,
-                Position(lineno, matched_flag_span[0]),
-                Position(lineno, matched_flag_span[1]),
+                Position(cur_lineno, matched_flag_span[0]),
+                Position(cur_lineno, matched_flag_span[1]),
             )
             if matched.group("flag")
             else None
@@ -105,74 +106,74 @@ class ConfParser:
         matched_value_span: tuple[int, int] = matched.span("value")
         value_info: SymbolInfo = SymbolInfo(
             value_str,
-            Position(lineno, matched_value_span[0]),
-            Position(lineno, matched_value_span[1]),
+            Position(cur_lineno, matched_value_span[0]),
+            Position(cur_lineno, matched_value_span[1]),
         )
 
         is_export: bool = True if matched.group("exp") else False
         self.__visitor.config_callback(
-            file_path, lineno, is_export, variable_info, flag, operator, value_info
+            file_path, cur_lineno, is_export, variable_info, flag, operator, value_info
         )
 
-    def parse_line(self: "ConfParser", file_path: str, lineno: int, s: str):
+    def parse_line(self: "ConfParser", file_path: str, start_lineno: int, cur_lineno: int, s: str):
         m = self.__config_regexp__.match(s)
         if m:
-            self.__configure_event(file_path, lineno, s, m)
+            self.__configure_event(file_path, start_lineno, cur_lineno, s, m)
             return
 
         m = self.__include_regexp__.match(s)
         if m:
             include_target: SymbolInfo = SymbolInfo(
                 m.group(1),
-                Position(lineno, m.span(1)[0]),
-                Position(lineno, m.span(1)[1]),
+                Position(cur_lineno, m.span(1)[0]),
+                Position(cur_lineno, m.span(1)[1]),
             )
-            self.__visitor.include_callback(file_path, lineno, include_target)
+            self.__visitor.include_callback(file_path, start_lineno, cur_lineno, include_target)
             return
 
         m = self.__require_regexp__.match(s)
         if m:
             require_target: SymbolInfo = SymbolInfo(
                 m.group(1),
-                Position(lineno, m.span(1)[0]),
-                Position(lineno, m.span(1)[1]),
+                Position(cur_lineno, m.span(1)[0]),
+                Position(cur_lineno, m.span(1)[1]),
             )
-            self.__visitor.require_callback(file_path, lineno, require_target)
+            self.__visitor.require_callback(file_path, start_lineno, cur_lineno, require_target)
             return
 
         m = self.__export_regexp__.match(s)
         if m:
             export_target: SymbolInfo = SymbolInfo(
                 m.group(1),
-                Position(lineno, m.span(1)[0]),
-                Position(lineno, m.span(1)[1]),
+                Position(cur_lineno, m.span(1)[0]),
+                Position(cur_lineno, m.span(1)[1]),
             )
-            self.__visitor.export_callback(file_path, lineno, export_target)
+            self.__visitor.export_callback(file_path, start_lineno, cur_lineno, export_target)
             return
 
         m = self.__unset_regexp__.match(s)
         if m:
             unset_target: SymbolInfo = SymbolInfo(
                 m.group(1),
-                Position(lineno, m.span(1)[0]),
-                Position(lineno, m.span(1)[1]),
+                Position(cur_lineno, m.span(1)[0]),
+                Position(cur_lineno, m.span(1)[1]),
             )
-            self.__visitor.unset_callback(file_path, lineno, unset_target)
+            self.__visitor.unset_callback(file_path, start_lineno, cur_lineno, unset_target)
             return
 
         m = self.__unset_flag_regexp__.match(s)
         if m:
             unset_target: SymbolInfo = SymbolInfo(
                 m.group(1),
-                Position(lineno, m.span(1)[0]),
-                Position(lineno, m.span(1)[1]),
+                Position(cur_lineno, m.span(1)[0]),
+                Position(cur_lineno, m.span(1)[1]),
             )
             unset_flag: SymbolInfo = SymbolInfo(
                 m.group(2),
-                Position(lineno, m.span(2)[0]),
-                Position(lineno, m.span(2)[1]),
+                Position(cur_lineno, m.span(2)[0]),
+                Position(cur_lineno, m.span(2)[1]),
             )
-            self.__visitor.unset_flag_callback(file_path, lineno, unset_target, unset_flag)
+            self.__visitor.unset_flag_callback(file_path, start_lineno, cur_lineno, unset_target, unset_flag)
             return
 
-        self.__visitor.error_callback(file_path, lineno, f"unparsed line: '{s}'")
+        self.__visitor.error_callback(file_path, cur_lineno, f"unparsed line: '{s}'")

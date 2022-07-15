@@ -28,7 +28,8 @@ class BitbakeVisitorBase:
     def function_callback(
         self: "BitbakeVisitorBase",
         file_path: str,
-        lineno: int, 
+        start_lineno: int, 
+        cur_lineno: int, 
         head: FunctionHeader,
         body: FunctionBody,
     ):
@@ -37,7 +38,8 @@ class BitbakeVisitorBase:
     def python_function_callback(
         self: "BitbakeVisitorBase",
         file_path: str,
-        lineno: int, 
+        start_lineno: int, 
+        cur_lineno: int, 
         head: FunctionHeader,
         body: FunctionBody,
     ):
@@ -46,7 +48,8 @@ class BitbakeVisitorBase:
     def export_function_callback(
         self: "BitbakeVisitorBase",
         file_path: str,
-        lineno: int, 
+        start_lineno: int, 
+        cur_lineno: int, 
         function_name: str,
         start: Position,
         end: Position,
@@ -56,7 +59,8 @@ class BitbakeVisitorBase:
     def add_task_callback(
         self: "BitbakeVisitorBase",
         file_path: str,
-        lineno: int, 
+        start_lineno: int, 
+        cur_lineno: int, 
         added_task: SymbolInfo,
         before: List[SymbolInfo],
         after: List[SymbolInfo],
@@ -64,19 +68,20 @@ class BitbakeVisitorBase:
         pass
 
     def delete_task_callback(
-        self: "BitbakeVisitorBase", file_path: str, lineno: int, deleted_task: SymbolInfo
+        self: "BitbakeVisitorBase", file_path: str, start_lineno: int, cur_lineno: int, deleted_task: SymbolInfo
     ):
         pass
 
     def add_handler_callback(
-        self: "BitbakeVisitorBase", file_path: str, lineno: int , handler_task: SymbolInfo
+        self: "BitbakeVisitorBase", file_path: str, start_lineno: int, cur_lineno: int, handler_task: SymbolInfo
     ):
         pass
 
     def inherit_callback(
         self: "BitbakeVisitorBase",
         file_path: str,
-        lineno: int, 
+        start_lineno: int, 
+        cur_lineno: int, 
         inherit_target_names: List[SymbolInfo],
     ):
         pass
@@ -95,29 +100,30 @@ class BitbakeVisitorBase:
         pass
 
     def include_callback(
-        self: "BitbakeVisitorBase", file_path: str, lineno: int, include_target: SymbolInfo
+        self: "BitbakeVisitorBase", file_path: str, start_lineno:int, cur_lineno: int, include_target: SymbolInfo
     ) -> None:
         pass
 
     def require_callback(
-        self: "BitbakeVisitorBase", file_path: str, lineno:int, require_target: SymbolInfo
+        self: "BitbakeVisitorBase", file_path: str, start_lineno:int, cur_lineno:int, require_target: SymbolInfo
     ) -> None:
         pass
 
     def export_callback(
-        self: "BitbakeVisitorBase", file_path: str, lineno:int, export_target: SymbolInfo
+        self: "BitbakeVisitorBase", file_path: str, start_lineno: int, cur_lineno:int, export_target: SymbolInfo
     ) -> None:
         pass
 
     def unset_callback(
-        self: "BitbakeVisitorBase", file_path: str, lineno:int, unset_target: SymbolInfo
+        self: "BitbakeVisitorBase", file_path: str, start_lineno: int, cur_lineno:int, unset_target: SymbolInfo
     ) -> None:
         pass
 
     def unset_flag_callback(
         self: "BitbakeVisitorBase",
         file_path: str,
-        lineno: int,
+        start_lineno: int,
+        cur_lineno: int,
         unset_flag_target: SymbolInfo,
         unset_flag: SymbolInfo,
     ) -> None:

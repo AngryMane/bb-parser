@@ -85,7 +85,7 @@ class BitbakeParser:
         self.__classname__: str = ""
         self.__residue__: List = []
 
-    def __infunc_event(self: "BitbakeParser", file_path: str, lineno: int, line: str):
+    def __infunc_event(self: "BitbakeParser", file_path: str, start_lineno: int, cur_lineno: int, line: str):
         if line == "}":
             self.__body__.append("")
             body = [self.__infunc__.header_raw_text]
@@ -101,9 +101,9 @@ class BitbakeParser:
                 self.__infunc__.is_fakeroot,
             )
             function_body: FunctionBody = FunctionBody(
-                body, Position(self.__infunc__.lineno, 0), Position(lineno, 1)
+                body, Position(self.__infunc__.lineno, 0), Position(cur_lineno, 1)
             )
-            self.__visitor.function_callback(file_path, lineno, header, function_body)
+            self.__visitor.function_callback(file_path, start_lineno, cur_lineno, header, function_body)
 
             self.__infunc__ = None
             self.__body__ = []
@@ -114,7 +114,7 @@ class BitbakeParser:
         self.__body__.append(line)
 
     def __python_func_event(
-        self: "BitbakeParser", file_path: str, lineno: int, line: str
+        self: "BitbakeParser", file_path: str, start_lineno:int, cur_lineno: int, line: str
     ):
         header: FunctionHeader = FunctionHeader(
             self.__inpython__.name,
@@ -127,18 +127,18 @@ class BitbakeParser:
         function_body: FunctionBody = FunctionBody(
             self.__body__,
             Position(self.__inpython__.lineno, self.__inpython__.span[0]),
-            Position(lineno - 1, 0),
+            Position(cur_lineno - 1, 0),
         )
-        self.__visitor.python_function_callback(file_path, lineno, header, function_body)
+        self.__visitor.python_function_callback(file_path, start_lineno, cur_lineno, header, function_body)
         self.__body__ = []
         self.__inpython__ = None
 
     def __funcstart_event(
-        self: "BitbakeParser", lineno: int, line: str, matched: Optional[re.Match]
+        self: "BitbakeParser", start_lineno:int, end_lineno: int, line: str, matched: Optional[re.Match]
     ):
         self.__infunc__ = FunctionInfo(
             matched.group("func") or "__anonymous",
-            lineno,
+            end_lineno,
             matched.span("func"),
             matched.group("py") is not None,
             matched.group("fr") is not None,
@@ -146,32 +146,35 @@ class BitbakeParser:
         )
 
     def __def_event(
-        self: "BitbakeParser", lineno: int, line: str, matched: Optional[re.Match]
+        self: "BitbakeParser", start_lineno:int, cur_lineno: int, line: str, matched: Optional[re.Match]
     ):
         self.__body__.append(line)
         self.__inpython__ = FunctionInfo(
-            matched.group(1), lineno, matched.span(), True, False, line
+            matched.group(1), cur_lineno, matched.span(), True, False, line
         )
 
     def __export_func_event(
         self: "BitbakeParser",
         file_path: str,
-        lineno: int,
+        start_lineno: int,
+        cur_lineno: int,
         line: str,
         matched: Optional[re.Match],
     ):
         self.__visitor.export_function_callback(
             file_path,
-            lineno,
+            start_lineno,
+            cur_lineno,
             matched.group(1),
-            Position(lineno, matched.span(1)[0]),
-            Position(lineno, matched.span(1)[1]),
+            Position(cur_lineno, matched.span(1)[0]),
+            Position(cur_lineno, matched.span(1)[1]),
         )
 
     def __addtask_event(
         self: "BitbakeParser",
         file_path: str,
-        lineno: int,
+        start_lineno: int,
+        cur_lineno: int,
         line: str,
         matched: Optional[re.Match],
     ):
@@ -180,7 +183,7 @@ class BitbakeParser:
             if m2 and m2.group("ignores"):
                 matched_ignores = m2.group("ignores")
                 self.__visitor.warning_callback(
-                    file_path, lineno, f'addtask ignored: "{matched_ignores}"'
+                    file_path, cur_lineno, f'addtask ignored: "{matched_ignores}"'
                 )
 
         taskexpression = line.split()
@@ -188,7 +191,7 @@ class BitbakeParser:
             if taskexpression.count(word) > 1:
                 self.__visitor.warning_callback(
                     file_path,
-                    lineno,
+                    cur_lineno,
                     f"addtask contained multiple '{word}' keywords, only one is supported",
                 )
 
@@ -200,8 +203,8 @@ class BitbakeParser:
 
         added_task: SymbolInfo = SymbolInfo(
             matched.group(1),
-            Position(lineno, matched.span(1)[0]),
-            Position(lineno, matched.span(1)[1]),
+            Position(cur_lineno, matched.span(1)[0]),
+            Position(cur_lineno, matched.span(1)[1]),
         )
 
         before: List[SymbolInfo] = []
@@ -213,7 +216,7 @@ class BitbakeParser:
                 end_pos = start_pos + len(tsk)
                 before.append(
                     SymbolInfo(
-                        tsk, Position(lineno, start_pos), Position(lineno, end_pos)
+                        tsk, Position(cur_lineno, start_pos), Position(cur_lineno, end_pos)
                     )
                 )
 
@@ -224,44 +227,47 @@ class BitbakeParser:
                 end_pos = start_pos + len(tsk)
                 after.append(
                     SymbolInfo(
-                        tsk, Position(lineno, start_pos), Position(lineno, end_pos)
+                        tsk, Position(cur_lineno, start_pos), Position(cur_lineno, end_pos)
                     )
                 )
 
-        self.__visitor.add_task_callback(file_path, lineno, added_task, before, after)
+        self.__visitor.add_task_callback(file_path, start_lineno, cur_lineno, added_task, before, after)
 
     def __del_task_event(
         self: "BitbakeParser",
         file_path: str,
-        lineno: int,
+        start_lineno: int,
+        cur_lineno: int,
         line: str,
         matched: Optional[re.Match],
     ):
         deleted_task: SymbolInfo = SymbolInfo(
             matched.group(1),
-            Position(lineno, matched.span(1)[0]),
-            Position(lineno, matched.span(1)[1]),
+            Position(cur_lineno, matched.span(1)[0]),
+            Position(cur_lineno, matched.span(1)[1]),
         )
-        self.__visitor.delete_task_callback(file_path, lineno, deleted_task)
+        self.__visitor.delete_task_callback(file_path, start_lineno, cur_lineno, deleted_task)
 
     def __add_handler_event(
         self: "BitbakeParser",
         file_path: str,
-        lineno: int,
+        start_lineno: int,
+        cur_lineno: int,
         line: str,
         matched: Optional[re.Match],
     ):
         handler_task: SymbolInfo = SymbolInfo(
             matched.group(1),
-            Position(lineno, matched.span(1)[0]),
-            Position(lineno, matched.span(1)[1]),
+            Position(cur_lineno, matched.span(1)[0]),
+            Position(cur_lineno, matched.span(1)[1]),
         )
-        self.__visitor.add_handler_callback(file_path, lineno, handler_task)
+        self.__visitor.add_handler_callback(file_path, start_lineno, cur_lineno, handler_task)
 
     def __inherit_event(
         self: "BitbakeParser",
         file_path: str,
-        lineno: int,
+        start_lineno: int,
+        cur_lineno: int,
         line: str,
         matched: Optional[re.Match],
     ):
@@ -271,13 +277,13 @@ class BitbakeParser:
             end_pos = start_pos + len(target)
             inherit_target_names.append(
                 SymbolInfo(
-                    target, Position(lineno, start_pos), Position(lineno, end_pos)
+                    target, Position(cur_lineno, start_pos), Position(cur_lineno, end_pos)
                 )
             )
-        self.__visitor.inherit_callback(file_path, lineno, inherit_target_names)
+        self.__visitor.inherit_callback(file_path, start_lineno, cur_lineno, inherit_target_names)
 
     def __feeder(
-        self: "BitbakeParser", file_path: str, lineno, s, eof=False
+        self: "BitbakeParser", file_path: str, cur_lineno, s, eof=False
     ) -> Optional[str]:
         if self.__inpython__ or (
             self.__infunc__
@@ -287,21 +293,23 @@ class BitbakeParser:
             if tab:
                 self.__visitor.warning_callback(
                     file_path,
-                    lineno,
-                    f"python should use 4 spaces indentation, but found tabs in line {lineno}",
+                    cur_lineno,
+                    f"python should use 4 spaces indentation, but found tabs in line {cur_lineno}",
                 )
 
         if self.__infunc__:
-            self.__infunc_event(file_path, lineno, s)
+            start_lineno: int = cur_lineno - len(self.__body__)
+            self.__infunc_event(file_path, start_lineno, cur_lineno, s)
             return
 
         if self.__inpython__:
             m = self.__python_func_regexp__.match(s)
             if m and not eof:
-                self.__inpython_func_event(lineno, s)
+                self.__inpython_func_event(cur_lineno, s)
                 return
             else:
-                self.__python_func_event(file_path, lineno, s)
+                start_lineno: int = cur_lineno - len(self.__body__)
+                self.__python_func_event(file_path, start_lineno, cur_lineno, s)
                 if eof:
                     return
 
@@ -309,8 +317,8 @@ class BitbakeParser:
             if len(self.__residue__) != 0 and self.__residue__[0][0] != "#":
                 self.__visitor.error_callback(
                     file_path,
-                    lineno,
-                    f"There is a comment on line {lineno} of file {file_path} ({s}) which is in the middle of a multiline expression.\nBitbake used to ignore these but no longer does so, please fix your metadata as errors are likely as a result of this change.",
+                    cur_lineno,
+                    f"There is a comment on line {cur_lineno} of file {file_path} ({s}) which is in the middle of a multiline expression.\nBitbake used to ignore these but no longer does so, please fix your metadata as errors are likely as a result of this change.",
                 )
 
         if (
@@ -320,14 +328,15 @@ class BitbakeParser:
         ):
             self.__visitor.error_callback(
                 file_path,
-                lineno,
-                f"There is a confusing multiline, partially commented expression on line {lineno} of file {file_path} ({s}).\nPlease clarify whether this is all a comment or should be parsed.",
+                cur_lineno,
+                f"There is a confusing multiline, partially commented expression on line {cur_lineno} of file {file_path} ({s}).\nPlease clarify whether this is all a comment or should be parsed.",
             )
 
         if s and s[-1] == "\\":
             self.__residue__.append(s[:-1])
             return
 
+        start_lineno: int = cur_lineno - len(self.__residue__)
         s = "".join(self.__residue__) + s
         self.__residue__ = []
 
@@ -341,37 +350,37 @@ class BitbakeParser:
 
         m = self.__func_start_regexp__.match(s)
         if m:
-            self.__funcstart_event(lineno, s, m)
+            self.__funcstart_event(start_lineno, cur_lineno, s, m)
             return
 
         m = self.__def_regexp__.match(s)
         if m:
-            self.__def_event(lineno, s, m)
+            self.__def_event(start_lineno, cur_lineno, s, m)
             return
 
         m = self.__export_func_regexp__.match(s)
         if m:
-            self.__export_func_event(file_path, lineno, s, m)
+            self.__export_func_event(file_path, start_lineno, cur_lineno, s, m)
             return
 
         m = self.__addtask_regexp__.match(s)
         if m:
-            self.__addtask_event(file_path, lineno, s, m)
+            self.__addtask_event(file_path, start_lineno, cur_lineno, s, m)
             return
 
         m = self.__deltask_regexp__.match(s)
         if m:
-            self.__del_task_event(file_path, lineno, s, m)
+            self.__del_task_event(file_path, start_lineno, cur_lineno, s, m)
             return
 
         m = self.__addhandler_regexp__.match(s)
         if m:
-            self.__add_handler_event(file_path, lineno, s, m)
+            self.__add_handler_event(file_path, start_lineno, cur_lineno, s, m)
             return
 
         m = self.__inherit_regexp__.match(s)
         if m:
-            self.__inherit_event(file_path, lineno, s, m)
+            self.__inherit_event(file_path, start_lineno, cur_lineno, s, m)
             return
 
-        self.__conf_parser.parse_line(file_path, lineno, s)
+        self.__conf_parser.parse_line(file_path, start_lineno, cur_lineno, s)
