@@ -90,7 +90,8 @@ class BitbakeVisitorBase:
     def config_callback(
         self: "BitbakeVisitorBase",
         file_path: str,
-        lineno: int, 
+        start_lineno: int, 
+        cur_lineno: int, 
         is_export: bool,
         variable: VariableInfo,
         flag: Optional[SymbolInfo],

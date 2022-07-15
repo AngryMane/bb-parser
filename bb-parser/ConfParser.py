@@ -112,7 +112,7 @@ class ConfParser:
 
         is_export: bool = True if matched.group("exp") else False
         self.__visitor.config_callback(
-            file_path, cur_lineno, is_export, variable_info, flag, operator, value_info
+            file_path, start_lineno, cur_lineno, is_export, variable_info, flag, operator, value_info
         )
 
     def parse_line(self: "ConfParser", file_path: str, start_lineno: int, cur_lineno: int, s: str):
